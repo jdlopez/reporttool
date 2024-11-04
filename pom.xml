@@ -28,11 +28,18 @@
 	</scm>
 	<properties>
 		<java.version>17</java.version>
+		<h2.version>2.2.224</h2.version>
 	</properties>
 	<dependencies>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-jdbc</artifactId>
+			<groupId>com.zaxxer</groupId>
+			<artifactId>HikariCP</artifactId>
+			<version>6.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.sql2o</groupId>
+			<artifactId>sql2o</artifactId>
+			<version>1.8.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -48,24 +55,14 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-undertow</artifactId>
 		</dependency>
-<!--		<dependency>-->
-<!--			<groupId>io.github.wimdeblauwe</groupId>-->
-<!--			<artifactId>htmx-spring-boot</artifactId>-->
-<!--			<version>3.5.0</version>-->
-<!--		</dependency>-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-oauth2-client</artifactId>
+			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
-<!--		<dependency>-->
-<!--			<groupId>com.azure.spring</groupId>-->
-<!--			<artifactId>spring-cloud-azure-starter-active-directory</artifactId>-->
-<!--			<version>5.17.1</version>-->
-<!--		</dependency>-->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
-			<scope>runtime</scope>
+			<version>${h2.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -92,6 +89,83 @@
 						</exclude>
 					</excludes>
 				</configuration>
+			</plugin>
+
+			<!-- create sample data -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>sql-maven-plugin</artifactId>
+				<version>3.0.0</version>
+
+				<dependencies>
+					<dependency>
+						<groupId>com.h2database</groupId>
+						<artifactId>h2</artifactId>
+						<version>${h2.version}</version>
+					</dependency>
+				</dependencies>
+
+				<!-- common configuration shared by all executions -->
+				<configuration>
+					<driver>org.h2.Driver</driver>
+					<url>jdbc:h2:./target/data-test</url>
+					<username></username>
+					<password></password>
+					<!-- You can comment out username/password configurations and
+                         have maven to look them up in your settings.xml using ${settingsKey}
+                    -->
+					<settingsKey>sensibleKey</settingsKey>
+					<!--all executions are ignored if -Dmaven.test.skip=true-->
+					<!--suppress UnresolvedMavenProperty -->
+					<skip>${maven.test.skip}</skip>
+				</configuration>
+
+				<executions>
+					<execution>
+						<id>create-schema</id>
+						<phase>process-test-resources</phase>
+						<goals>
+							<goal>execute</goal>
+						</goals>
+						<configuration>
+							<autocommit>true</autocommit>
+							<srcFiles>
+								<srcFile>src/test/resources/sql/create-usertables.sql</srcFile>
+							</srcFiles>
+						</configuration>
+					</execution>
+
+					<execution>
+						<id>create-data</id>
+						<phase>process-test-resources</phase>
+						<goals>
+							<goal>execute</goal>
+						</goals>
+						<configuration>
+							<orderFile>ascending</orderFile>
+							<fileset>
+								<basedir>${basedir}</basedir>
+								<includes>
+									<include>src/test/resources/sql/user-sampledata.sql</include>
+								</includes>
+							</fileset>
+						</configuration>
+					</execution>
+
+					<!-- drop db after test
+					<execution>
+						<id>drop-db-after-test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>execute</goal>
+						</goals>
+						<configuration>
+							<autocommit>true</autocommit>
+							<sqlCommand>drop database yourdb</sqlCommand>
+						</configuration>
+					</execution>
+					-->
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

@@ -1,0 +1,13 @@
+###
+GET http://localhost:8080/install
+
+###
+POST http://localhost:8080/install
+Content-Type: application/json
+
+< ./.samples/install.json
+
+###
+
+###
+GET http://localhost:8080/api/profile
